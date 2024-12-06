@@ -1,7 +1,7 @@
 import "@babylonjs/core/Debug/debugLayer";
 import "@babylonjs/inspector";
 import "@babylonjs/loaders/glTF";
-import { Engine, Scene, ArcRotateCamera, Vector3, HemisphericLight, Mesh, MeshBuilder, FreeCamera, Color4, StandardMaterial, Color3, PointLight, ShadowGenerator, Quaternion, Matrix } from "@babylonjs/core";
+import { Engine, Scene, ArcRotateCamera, Vector3, HemisphericLight, Mesh, MeshBuilder, FreeCamera, Color4, StandardMaterial, Color3, PointLight, ShadowGenerator, Quaternion, Matrix, LensRenderingPipeline } from "@babylonjs/core";
 import { AdvancedDynamicTexture, Button, Control } from "@babylonjs/gui";
 import { Environment } from "./environment";
 import { Player } from "./characterController";
@@ -53,17 +53,17 @@ class App {
     private _createCanvas(): HTMLCanvasElement {
 
         //Commented out for development
-        // document.documentElement.style["overflow"] = "hidden";
-        // document.documentElement.style.overflow = "hidden";
-        // document.documentElement.style.width = "100%";
-        // document.documentElement.style.height = "100%";
-        // document.documentElement.style.margin = "0";
-        // document.documentElement.style.padding = "0";
-        // document.body.style.overflow = "hidden";
-        // document.body.style.width = "100%";
-        // document.body.style.height = "100%";
-        // document.body.style.margin = "0";
-        // document.body.style.padding = "0";
+        document.documentElement.style["overflow"] = "hidden";
+        document.documentElement.style.overflow = "hidden";
+        document.documentElement.style.width = "100%";
+        document.documentElement.style.height = "100%";
+        document.documentElement.style.margin = "0";
+        document.documentElement.style.padding = "0";
+        document.body.style.overflow = "hidden";
+        document.body.style.width = "100%";
+        document.body.style.height = "100%";
+        document.body.style.margin = "0";
+        document.body.style.padding = "0";
 
         //create the canvas html element and attach it to the webpage
         this._canvas = document.createElement("canvas");

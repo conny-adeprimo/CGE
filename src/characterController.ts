@@ -1,4 +1,4 @@
-import { TransformNode, ShadowGenerator, Scene, Mesh, UniversalCamera, ArcRotateCamera, Vector3, Quaternion, Ray } from "@babylonjs/core";
+import { TransformNode, ShadowGenerator, Scene, Mesh, UniversalCamera, ArcRotateCamera, Vector3, Quaternion, Ray, LensRenderingPipeline } from "@babylonjs/core";
 
 export class Player extends TransformNode {
     public camera;
@@ -265,8 +265,22 @@ export class Player extends TransformNode {
         this.camera.lockedTarget = this._camRoot.position;
         this.camera.fov = 0.47350045992678597;
         this.camera.parent = yTilt;
+        
+        // Make camera a fisheyed lens
+
 
         this.scene.activeCamera = this.camera;
+
+        var lensEffect = new LensRenderingPipeline('lensEffects', {
+            edge_blur: 1.0,
+            chromatic_aberration: 1.0,
+            distortion: 0.5,
+            grain_amount: 1.0,
+            blur_noise: true,
+        }, this.scene, 1.0, [this.camera]);
+        // scene.postProcessRenderPipelineManager.attachCamerasToRenderPipeline("lensEffects", camera);
+
+
         return this.camera;
     }
 }
