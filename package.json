@@ -4,8 +4,9 @@
   "description": "Conny's Game Engine",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
+        "build": "webpack",
+        "start": "webpack-dev-server --port 8080"
+    },
   "author": "",
   "license": "ISC",
   "devDependencies": {
