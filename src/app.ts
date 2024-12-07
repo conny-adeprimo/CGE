@@ -220,7 +220,7 @@ class App {
             box.position.y = 0.5;
             box.position.z = 0.3;
 
-            var body = Mesh.CreateCylinder("body", 1.5, 1, 0.1, 0 ,0,scene);
+            var body = Mesh.CreateCylinder("body", 1.5, 1, 0.001, 0 ,0,scene);
             var bodymtl = new StandardMaterial("red",scene);
             bodymtl.diffuseColor = new Color3(.8,.5,.5);
             body.material = bodymtl;
