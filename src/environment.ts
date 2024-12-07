@@ -16,11 +16,12 @@ export class Environment {
         assets.allMeshes.forEach((m) => {
             m.receiveShadows = true;
             m.checkCollisions = true;
+            //m.scaling = new Vector3(1, 1, 
         });
     }
 
     public async _loadAsset() {
-        const result = await SceneLoader.ImportMeshAsync(null, "./models/", "world.glb", this._scene);
+        const result = await SceneLoader.ImportMeshAsync(null, "./models/", "world2.glb", this._scene);
         let env = result.meshes[0];
         let allMeshes = env.getChildMeshes();
 

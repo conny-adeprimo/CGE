@@ -13,10 +13,9 @@ export class Player extends TransformNode {
     private _yTilt: TransformNode;
 
     //const values
-    private static readonly PLAYER_SPEED: number = 0.45;
-    private static readonly JUMP_FORCE: number = 0.80;
+    private static readonly PLAYER_SPEED: number = 0.2;
     private static readonly GRAVITY: number = -2.8;
-    private static readonly ORIGINAL_TILT: Vector3 = new Vector3(0.5934119456780721, 0, 0);
+    private static readonly ORIGINAL_TILT: Vector3 = new Vector3(0.3, 0, 0);
 
     //player movement vars
     private _deltaTime: number = 0;
@@ -172,10 +171,7 @@ export class Player extends TransformNode {
                 this._grounded = false;
             }
         }
-        //limit the speed of gravity to the negative of the jump power
-        if (this._gravity.y < -Player.JUMP_FORCE) {
-            this._gravity.y = -Player.JUMP_FORCE;
-        }
+
         this.mesh.moveWithCollisions(this._moveDirection.addInPlace(this._gravity));
 
         if (this._isGrounded()) {
@@ -220,13 +216,10 @@ export class Player extends TransformNode {
         yTilt.parent = this._camRoot;
 
         //our actual camera that's pointing at our root's position
-        this.camera = new UniversalCamera("cam", new Vector3(0, 0, -30), this.scene);
+        this.camera = new UniversalCamera("cam", new Vector3(0, 0, -35), this.scene);
         this.camera.lockedTarget = this._camRoot.position;
-        this.camera.fov = 0.47350045992678597;
+        this.camera.fov = 0.2; // 0.47350045992678597;
         this.camera.parent = yTilt;
-        
-        // Make camera a fisheyed lens
-
 
         this.scene.activeCamera = this.camera;
 

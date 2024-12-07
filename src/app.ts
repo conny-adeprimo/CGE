@@ -202,22 +202,22 @@ class App {
 
          async function loadCharacter(){
             //collision mesh
-            const outer = MeshBuilder.CreateBox("outer", { width: 2, depth: 1, height: 3 }, scene);
+            const outer = MeshBuilder.CreateBox("outer", { width: 1, depth: 1, height: 1.5 }, scene);
             outer.isVisible = false;
             outer.isPickable = false;
             outer.checkCollisions = true;
 
             //move origin of box collider to the bottom of the mesh (to match player mesh)
-            outer.bakeTransformIntoVertices(Matrix.Translation(0, 1.5, 0))
+            //outer.bakeTransformIntoVertices(Matrix.Translation(0, 1.5, 0)) // OLD: Matrix.Translation(0, 1.5, 0)
             
             //for collisions
-            // outer.ellipsoid = new Vector3(1, 1.5, 1);
-            // outer.ellipsoidOffset = new Vector3(0, 1.5, 0);
+            //outer.ellipsoid = new Vector3(1, 1.5, 1);
+            //outer.ellipsoidOffset = new Vector3(0, 1.5, 0);
 
             outer.rotationQuaternion = new Quaternion(0, 1, 0, 0); // rotate the player mesh 180 since we want to see the back of the player
             
             var box = MeshBuilder.CreateBox("Small1", { width: 0.5, depth: 0.5, height: 0.25, faceColors: [new Color4(0,0,0,1), new Color4(0,0,0,1), new Color4(0,0,0,1), new Color4(0,0,0,1),new Color4(0,0,0,1), new Color4(0,0,0,1)] }, scene);
-            box.position.y = 2;
+            box.position.y = 0.5;
             box.position.z = 0.3;
 
             var body = Mesh.CreateCylinder("body", 1.5, 1, 0.1, 0 ,0,scene);
@@ -225,7 +225,7 @@ class App {
             bodymtl.diffuseColor = new Color3(.8,.5,.5);
             body.material = bodymtl;
             body.isPickable = false;
-            body.bakeTransformIntoVertices(Matrix.Translation(0, 1.5, 0)); // simulates the imported mesh's origin
+            //body.bakeTransformIntoVertices(Matrix.Translation(0, 1.5, 0)); // simulates the imported mesh's origin
 
             //parent the meshes
             box.parent = body;
