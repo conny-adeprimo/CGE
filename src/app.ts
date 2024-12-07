@@ -138,6 +138,8 @@ class App {
         this._scene.dispose();
         this._scene = scene;
         this._state = State.START;
+
+        await this._goToCutScene();
     }
 
     private async _goToCutScene(): Promise<void> {
@@ -181,6 +183,8 @@ class App {
         await this._setUpGame().then(res =>{
             finishedLoading = true;
         });
+
+        await this._goToGame();
     }
 
     private async _setUpGame() {
@@ -213,10 +217,10 @@ class App {
             outer.rotationQuaternion = new Quaternion(0, 1, 0, 0); // rotate the player mesh 180 since we want to see the back of the player
             
             var box = MeshBuilder.CreateBox("Small1", { width: 0.5, depth: 0.5, height: 0.25, faceColors: [new Color4(0,0,0,1), new Color4(0,0,0,1), new Color4(0,0,0,1), new Color4(0,0,0,1),new Color4(0,0,0,1), new Color4(0,0,0,1)] }, scene);
-            box.position.y = 1.5;
-            box.position.z = 1;
+            box.position.y = 2;
+            box.position.z = 0.3;
 
-            var body = Mesh.CreateCylinder("body", 3, 2,2,0,0,scene);
+            var body = Mesh.CreateCylinder("body", 1.5, 1, 0.1, 0 ,0,scene);
             var bodymtl = new StandardMaterial("red",scene);
             bodymtl.diffuseColor = new Color3(.8,.5,.5);
             body.material = bodymtl;
