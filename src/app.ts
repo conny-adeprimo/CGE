@@ -1,7 +1,7 @@
 import "@babylonjs/core/Debug/debugLayer";
 import "@babylonjs/inspector";
 import "@babylonjs/loaders/glTF";
-import { Engine, Scene, ArcRotateCamera, Vector3, HemisphericLight, Mesh, MeshBuilder, FreeCamera, Color4, StandardMaterial, Color3, PointLight, ShadowGenerator, Quaternion, Matrix, LensRenderingPipeline } from "@babylonjs/core";
+import { Engine, Scene, ArcRotateCamera, Vector3, HemisphericLight, Mesh, MeshBuilder, FreeCamera, Color4, StandardMaterial, Color3, PointLight, ShadowGenerator, Quaternion, Matrix, LensRenderingPipeline, SpotLight } from "@babylonjs/core";
 import { AdvancedDynamicTexture, Button, Control } from "@babylonjs/gui";
 import { Environment } from "./environment";
 import { Player } from "./characterController";
@@ -227,6 +227,11 @@ class App {
             body.isPickable = false;
             //body.bakeTransformIntoVertices(Matrix.Translation(0, 1.5, 0)); // simulates the imported mesh's origin
 
+            // FLASHLIGHT
+            var spotLight = new SpotLight("spotLight", new Vector3(0, 0, 0), new Vector3(0, 0, 1), 0.8, 2, scene);
+            spotLight.intensity = 50;
+            spotLight.parent = body;
+
             //parent the meshes
             box.parent = body;
             body.parent = outer;
@@ -243,11 +248,12 @@ class App {
 
     private async _initializeGameAsync(scene): Promise<void> {
         //temporary light to light the entire scene
-        var light0 = new HemisphericLight("HemiLight", new Vector3(0, 1, 0), scene);
+        //var light0 = new HemisphericLight("HemiLight", new Vector3(0, 1, 0), scene);
 
+        // DISABLED SPARKLIGHT
         const light = new PointLight("sparklight", new Vector3(0, 0, 0), scene);
         light.diffuse = new Color3(0.08627450980392157, 0.10980392156862745, 0.15294117647058825);
-        light.intensity = 35;
+        light.intensity = 1;
         light.radius = 1;
     
         const shadowGenerator = new ShadowGenerator(1024, light);
