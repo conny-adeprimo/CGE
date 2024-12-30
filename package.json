@@ -4,9 +4,9 @@
   "description": "Conny's Game Engine",
   "main": "index.js",
   "scripts": {
-        "build": "webpack",
-        "start": "webpack-dev-server --port 8080"
-    },
+    "build": "webpack",
+    "start": "webpack-dev-server --port 8080"
+  },
   "author": "",
   "license": "ISC",
   "devDependencies": {
@@ -17,6 +17,7 @@
     "typescript": "^5.7.2",
     "webpack": "^5.97.1",
     "webpack-cli": "^5.1.4",
-    "webpack-dev-server": "^5.1.0"
+    "webpack-dev-server": "^5.1.0",
+    "recast-detour": "^1.6.3"
   }
 }

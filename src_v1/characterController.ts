@@ -75,8 +75,7 @@ export class Player extends TransformNode {
         //final movement that takes into consideration the inputs
         this._moveDirection = this._moveDirection.scaleInPlace(this._inputAmt * Player.PLAYER_SPEED);
 
-        //Rotations
-        //check if there is movement to determine if rotation is needed
+        
         let input = new Vector3(this._input.horizontalAxis, 0, this._input.verticalAxis); //along which axis is the direction
         if (input.length() == 0) {//if there's no input detected, prevent rotation and keep player in same rotation
             return;
