@@ -64,7 +64,7 @@ class App {
         var scene = new Scene(this._engine);
 
         scene.fogMode = Scene.FOGMODE_EXP;
-        scene.fogDensity = 0.02;
+        scene.fogDensity = 0.002;
         scene.fogColor = new Color3(0.2, 0.6, 0.9);
 
         // Create Camera
