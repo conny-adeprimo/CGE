@@ -3,6 +3,7 @@ import "@babylonjs/inspector";
 import "@babylonjs/loaders/glTF";
 import * as Recast from "recast-detour";
 import { Engine, Scene, PointerEventTypes, Vector3, HemisphericLight, Mesh, MeshBuilder, FreeCamera, StandardMaterial, Color3, TransformNode, RecastJSPlugin } from "@babylonjs/core";
+import { AdvancedDynamicTexture, Button, Control } from "@babylonjs/gui";
 
 class App {
 
@@ -32,6 +33,8 @@ class App {
 
         this._scene = await this.createScene();
 
+        this.createGUI();
+
         this._engine.runRenderLoop( () => {
             if (this._scene && this._scene.activeCamera) {
                 this._scene.render();
@@ -58,7 +61,6 @@ class App {
 
     private async createScene(): Promise<Scene> {
         var scene = new Scene(this._engine);
-        scene.debugLayer.show()
 
         // Create Camera
         var camera = new FreeCamera("camera1", new Vector3(-6, 4, -8), scene);
@@ -88,11 +90,10 @@ class App {
             mergeRegionArea: 20,
             maxVertsPerPoly: 6,
             detailSampleDist: 6,
-            detailSampleMaxError: 1,
+            detailSampleMaxError: 1
         };
 
         this._navigationPlugin.createNavMesh([staticMesh], navmeshParameters);
-
         var navmeshdebug = this._navigationPlugin.createDebugNavMesh(scene);
         navmeshdebug.position = new Vector3(0, 0.01, 0);
 
@@ -188,6 +189,46 @@ class App {
         });
 
         return scene;
+    }
+
+    private createGUI() {
+        // GUI
+        var advancedTexture = AdvancedDynamicTexture.CreateFullscreenUI("UI");
+
+        var debugButton = Button.CreateSimpleButton("debugButton", "Debug");
+        debugButton.onPointerClickObservable.add((value) => {
+            if (this._scene.debugLayer.isVisible()) {
+                this._scene.debugLayer.hide();
+            } else {
+                this._scene.debugLayer.show();
+            }
+        });
+        debugButton.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_RIGHT;
+
+        var fullscreenButton = Button.CreateSimpleButton("fullScreenButton", "Fullscreen");
+        fullscreenButton.onPointerClickObservable.add((value) => {
+            if (this._engine.isFullscreen) {
+                this._engine.exitFullscreen();
+            } else {
+                this._engine.enterFullscreen(true);
+            }
+        });
+        fullscreenButton.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_CENTER;
+
+        var buttons: Button[] = [
+            debugButton,
+            fullscreenButton
+        ];
+
+        buttons.forEach((button, index) => {
+            button.width = 0.2;
+            button.height = "30px";
+            button.color = "white";
+            button.background = "black";
+            button.verticalAlignment = Control.VERTICAL_ALIGNMENT_BOTTOM;
+
+            advancedTexture.addControl(button); 
+        });
     }
 
     private createStaticMesh(scene) {
