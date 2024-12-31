@@ -135,7 +135,6 @@ class App {
         };
 
         for (i = 0; i < 5; i++) {
-            console.log("Creating agent", i);
             //var agentCube = MeshBuilder.CreateBox("cube", { size: width, height: width }, scene);
             var agentCube = MeshBuilder.CreateCapsule("agent" + i, { radius: 0.3, height: 1.5, tessellation: 16, capSubdivisions: 2 }, scene);
             var targetCube = MeshBuilder.CreateBox("targetcube" + i, { size: 0.1, height: 0.1 }, scene);
