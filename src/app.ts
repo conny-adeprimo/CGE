@@ -2,7 +2,7 @@ import "@babylonjs/core/Debug/debugLayer";
 import "@babylonjs/inspector";
 import "@babylonjs/loaders/glTF";
 import * as Recast from "recast-detour";
-import { Engine, Scene, PointerEventTypes, Vector3, HemisphericLight, Mesh, MeshBuilder, FreeCamera, StandardMaterial, Color3, TransformNode, RecastJSPlugin } from "@babylonjs/core";
+import { Engine, Scene, SceneLoader, PointerEventTypes, Vector3, HemisphericLight, Mesh, MeshBuilder, FreeCamera, StandardMaterial, Color3, TransformNode, RecastJSPlugin } from "@babylonjs/core";
 import { AdvancedDynamicTexture, Button, Control } from "@babylonjs/gui";
 
 class App {
@@ -19,7 +19,8 @@ class App {
     private sceneData = {
         cameraPositions: [
             new Vector3(-6, 4, -8),
-            new Vector3(-4, 4, -4)
+            new Vector3(-4, 4, -4),
+            new Vector3(-4, 5, -16)
         ]
     }
 
@@ -62,6 +63,10 @@ class App {
     private async createScene(): Promise<Scene> {
         var scene = new Scene(this._engine);
 
+        scene.fogMode = Scene.FOGMODE_EXP;
+        scene.fogDensity = 0.02;
+        scene.fogColor = new Color3(0.2, 0.6, 0.9);
+
         // Create Camera
         var camera = new FreeCamera("camera1", new Vector3(-6, 4, -8), scene);
         camera.setTarget(Vector3.Zero());
@@ -72,7 +77,20 @@ class App {
         light.intensity = 0.7;
 
         // Create Static Mesh
-        var staticMesh = this.createStaticMesh(scene);
+        //var worldMesh = await this.createStaticMesh(scene);
+        var worldMeshes = await this.loadEnvironment();
+
+        // Environment post-processing
+        scene.materials.forEach((mat) => {
+            if (mat.name === "RoomWallMaterial") {
+                mat.backFaceCulling = true;
+            }
+        });
+        scene.meshes.forEach((mesh) => {
+            if (mesh.name === "RoomWalls") {
+                mesh.isPickable = false;
+            }
+        });
 
         // Set up navigation
         var agents = [];
@@ -93,7 +111,7 @@ class App {
             detailSampleMaxError: 1
         };
 
-        this._navigationPlugin.createNavMesh([staticMesh], navmeshParameters);
+        this._navigationPlugin.createNavMesh(worldMeshes, navmeshParameters);
         var navmeshdebug = this._navigationPlugin.createDebugNavMesh(scene);
         navmeshdebug.position = new Vector3(0, 0.01, 0);
 
@@ -119,7 +137,7 @@ class App {
         for (i = 0; i < 5; i++) {
             console.log("Creating agent", i);
             //var agentCube = MeshBuilder.CreateBox("cube", { size: width, height: width }, scene);
-            var agentCube = MeshBuilder.CreateCapsule("agent" + i, { radius: 0.1, height: 0.5, tessellation: 16, capSubdivisions: 2 }, scene);
+            var agentCube = MeshBuilder.CreateCapsule("agent" + i, { radius: 0.3, height: 1.5, tessellation: 16, capSubdivisions: 2 }, scene);
             var targetCube = MeshBuilder.CreateBox("targetcube" + i, { size: 0.1, height: 0.1 }, scene);
             var matAgent = new StandardMaterial('mat2', scene);
             var variation = Math.random();
@@ -133,9 +151,22 @@ class App {
         }    
 
         this._crowd.onReachTargetObservable.add((agentInfos) => {
-            // Ensure that reachRadius is correctly set
-            console.log("Agent reached destination: ", agentInfos);
-            if (agentInfos.agentIndex > 0) {
+            // TODO: Ensure that reachRadius is correctly set
+            if (agentInfos.agentIndex == 0) {
+                console.log("Player reached destination: ", agentInfos);
+                
+                // Change camera position depending on player position
+                var playerPos = this._crowd.getAgentPosition(0);
+                if (playerPos._z < -5) {
+                    this._scene.activeCamera.position = this.sceneData.cameraPositions[2];
+                } else if (playerPos._x > 0 && playerPos._z > 0) {
+                    this._scene.activeCamera.position = this.sceneData.cameraPositions[1];
+                } else {
+                    this._scene.activeCamera.position = this.sceneData.cameraPositions[0];
+                }
+                camera.setTarget(Vector3.Zero());
+
+            } else {
                 window.setTimeout(() => {
                     var randomPos = this._navigationPlugin.getRandomPointAround(new Vector3(-2.0, 0.1, -1.8), 0.5);
                     this._crowd.agentGoto(agentInfos.agentIndex, randomPos);
@@ -177,15 +208,6 @@ class App {
                     ag.mesh.rotation.y = ag.mesh.rotation.y + (desiredRotation - ag.mesh.rotation.y) * 0.05;
                 }
             }
-
-            // Change camera position depending on player position
-            var playerPos = this._crowd.getAgentPosition(0);
-            if (playerPos._x > 0 && playerPos._z > 0) {
-                this._scene.activeCamera.position = this.sceneData.cameraPositions[1];
-            } else {
-                this._scene.activeCamera.position = this.sceneData.cameraPositions[0];
-            }
-            camera.setTarget(Vector3.Zero());
         });
 
         return scene;
@@ -195,22 +217,26 @@ class App {
         // GUI
         var advancedTexture = AdvancedDynamicTexture.CreateFullscreenUI("UI");
 
-        var debugButton = Button.CreateSimpleButton("debugButton", "Debug");
+        var debugButton = Button.CreateSimpleButton("debugButton", "Show Debug");
         debugButton.onPointerClickObservable.add((value) => {
             if (this._scene.debugLayer.isVisible()) {
                 this._scene.debugLayer.hide();
+                debugButton.textBlock.text = "Show Debug";
             } else {
                 this._scene.debugLayer.show();
+                debugButton.textBlock.text = "Hide Debug";
             }
         });
         debugButton.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_RIGHT;
 
-        var fullscreenButton = Button.CreateSimpleButton("fullScreenButton", "Fullscreen");
+        var fullscreenButton = Button.CreateSimpleButton("fullScreenButton", "Enter Fullscreen");
         fullscreenButton.onPointerClickObservable.add((value) => {
             if (this._engine.isFullscreen) {
                 this._engine.exitFullscreen();
+                fullscreenButton.textBlock.text = "Enter Fullscreen";
             } else {
                 this._engine.enterFullscreen(true);
+                fullscreenButton.textBlock.text = "Exit Fullscreen";
             }
         });
         fullscreenButton.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_CENTER;
@@ -231,7 +257,19 @@ class App {
         });
     }
 
-    private createStaticMesh(scene) {
+    private async loadEnvironment() {
+        const result = await SceneLoader.ImportMeshAsync(null, "./models/", "office.glb", this._scene);
+
+        // TODO: Make walls non-pickable
+        // TODO: Enable Backface Culling for the walls
+
+
+        console.log("result", result);
+
+        return [result.meshes[1], result.meshes[2], result.meshes[3]];
+    }
+
+    private async createStaticMesh(scene) {
         var ground = Mesh.CreateGround("ground1", 8, 8, 2, scene);
 
         // Materials
