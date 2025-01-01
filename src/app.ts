@@ -70,6 +70,7 @@ class App {
                     break;
                 case "2":
                     this.switchCamera(1);
+                    break;
                 case "3":
                     alert("Camera 3 is not implemented yet");
                     break;
@@ -408,7 +409,7 @@ class App {
                 camera.position = new Vector3(-8, 2.5, 0);
                 break;
             case 1:
-                camera.position = new Vector3(-4, 1, -8)
+                camera.position = new Vector3(-4.1, 0.9, -9)
                 break;
         }
 
