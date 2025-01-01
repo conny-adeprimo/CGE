@@ -20,7 +20,7 @@ class App {
         this._main();
     }
 
-    private async _main(): Promise<void> { 
+    private async _main(): Promise<void> {
 
         await this.createEngine();
 
@@ -30,13 +30,52 @@ class App {
 
         this.createGUI();
 
-        this._engine.runRenderLoop( () => {
+        this._engine.runRenderLoop(() => {
             if (this._scene && this._scene.activeCamera) {
                 this._scene.render();
             }
         });
 
         this._scene.stopAllAnimations();
+
+        this.addKeyboardEvents(this._scene);
+    }
+
+    private addKeyboardEvents(scene: Scene) {
+        window.addEventListener("keydown", (ev) => {
+
+            switch (ev.key) {
+                case "ArrowDown":
+                    if (ev.altKey) { 
+                        scene.activeCamera.position.x -= ev.shiftKey ? 1 : 0.1;
+                    } else {
+                        scene.activeCamera.position.y -= ev.shiftKey ? 1 : 0.1;
+                    }
+                    break;
+                case "ArrowUp":
+                    if (ev.altKey) {
+                        scene.activeCamera.position.x += ev.shiftKey ? 1 : 0.1;
+                    } else {
+                        scene.activeCamera.position.y += ev.shiftKey ? 1 : 0.1;
+                    }
+                    break;
+                case "ArrowLeft":
+                    scene.activeCamera.position.z += ev.shiftKey ? 1 : 0.1; 
+                    break;
+                case "ArrowRight":
+                    scene.activeCamera.position.z -= ev.shiftKey ? 1 : 0.1;
+                    break;
+                case "1":
+                    this.switchCamera(0);
+                    break;
+                case "2":
+                    this.switchCamera(1);
+                case "3":
+                    alert("Camera 3 is not implemented yet");
+                    break;
+
+            }
+        });
     }
 
     private async createEngine() {
@@ -68,7 +107,7 @@ class App {
         camera.attachControl(this._canvas, true);
 
         // Create Light
-        var light = new HemisphericLight("light1", new Vector3(0, 1, 0), scene);
+        var light = new HemisphericLight("light1", new Vector3(0, 0, 0), scene);
         light.intensity = 0.7;
 
         // Create Static Mesh
@@ -107,13 +146,14 @@ class App {
         };
 
         this._navigationPlugin.createNavMesh(worldMeshes, navmeshParameters);
+        /*
         var navmeshdebug = this._navigationPlugin.createDebugNavMesh(scene);
         navmeshdebug.position = new Vector3(0, 0.01, 0);
 
         var matdebug = new StandardMaterial('matdebug', scene);
         matdebug.diffuseColor = new Color3(0.1, 0.2, 1);
         matdebug.alpha = 0.2;
-        navmeshdebug.material = matdebug;
+        navmeshdebug.material = matdebug;*/
 
         // crowd
         this._crowd = this._navigationPlugin.createCrowd(10, 0.1, scene);
@@ -132,7 +172,7 @@ class App {
         for (i = 0; i < 5; i++) {
             //var agentCube = MeshBuilder.CreateBox("cube", { size: width, height: width }, scene);
             var agentCube: Mesh;
-            if (i==0) {
+            if (i == 0) {
                 //var agentCube = MeshBuilder.CreateCapsule("agent" + i, { radius: 0.3, height: 1.5, tessellation: 16, capSubdivisions: 2 }, scene);
                 agentCube = await this.loadHuman();
                 console.log("human", agentCube)
@@ -143,14 +183,19 @@ class App {
                 matAgent.diffuseColor = new Color3(0.4 + variation * 0.6, 0.3, 1.0 - variation * 0.3);
                 agentCube.material = matAgent;
             }
-            
-            const targetCube = MeshBuilder.CreateBox("targetcube" + i, { size: 0.1, height: 0.1 }, scene);
+
+            const targetCube = MeshBuilder.CreateCylinder("targetCylinder" + i, { diameterTop: 0.7, diameterBottom: .7, height: 0.01, tessellation: 32 }, scene);
+            const matTarget = new StandardMaterial('matTarget', scene);
+            matTarget.diffuseColor = new Color3(0, 0.3, 0.9);
+            matTarget.alpha = 0.33;
+            targetCube.material = matTarget;
+
             const randomPos = this._navigationPlugin.getRandomPointAround(new Vector3(-2.0, 0.1, -1.8), 0.5);
             const transform = new TransformNode("transform" + i);
             //agentCube.parent = transform;
             var agentIndex = this._crowd.addAgent(randomPos, agentParams, transform);
             agents.push({ idx: agentIndex, trf: transform, mesh: agentCube, target: targetCube });
-        }    
+        }
 
         this._crowd.onReachTargetObservable.add((agentInfos) => {
             // TODO: Ensure that reachRadius is correctly set
@@ -159,7 +204,7 @@ class App {
 
                 // Stop player animations
                 this._scene.stopAllAnimations();
-                
+
                 // Change camera position depending on player position
                 var playerPos = this._crowd.getAgentPosition(0);
                 if (playerPos._z < -5) {
@@ -178,13 +223,13 @@ class App {
 
         // Send off agents
         window.setTimeout(() => {
-            for (var i=1; i<agents.length; i++) {
+            for (var i = 1; i < agents.length; i++) {
                 var randomPos = this._navigationPlugin.getRandomPointAround(new Vector3(-2.0, 0.1, -1.8), 0.5);
                 this._crowd.agentGoto(agents[i].idx, randomPos);
             }
         }, 1000);
 
-        
+
         scene.onPointerObservable.add((pointerInfo) => {
             switch (pointerInfo.type) {
                 case PointerEventTypes.POINTERDOWN:
@@ -255,7 +300,7 @@ class App {
             button.background = "black";
             button.verticalAlignment = Control.VERTICAL_ALIGNMENT_BOTTOM;
 
-            advancedTexture.addControl(button); 
+            advancedTexture.addControl(button);
         });
     }
 
@@ -281,7 +326,7 @@ class App {
             m.isPickable = false;
         })
 
-        return  outer as Mesh;
+        return outer as Mesh;
     }
 
     private async loadEnvironment() {
@@ -324,7 +369,7 @@ class App {
         return null;
     }
 
-    public pointerDown (mesh) {
+    public pointerDown(mesh) {
         var startingPoint;
         var camera = this._scene.activeCamera;
         var canvas = this._scene.getEngine().getRenderingCanvas();
@@ -341,7 +386,7 @@ class App {
             var i;
 
             for (i = 0; i < 1; i++) {
-               // var randomPos = this._navigationPlugin.getRandomPointAround(startingPoint, 1.0);
+                // var randomPos = this._navigationPlugin.getRandomPointAround(startingPoint, 1.0);
                 this._crowd.agentGoto(agents[i], this._navigationPlugin.getClosestPoint(startingPoint));
 
                 var pathPoints = this._navigationPlugin.computePath(this._crowd.getAgentPosition(agents[i]), this._navigationPlugin.getClosestPoint(startingPoint));
