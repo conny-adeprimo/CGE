@@ -41,6 +41,8 @@ class App {
                 this._scene.render();
             }
         });
+
+        this._scene.stopAllAnimations();
     }
 
     private async createEngine() {
@@ -127,8 +129,8 @@ class App {
             radius: 0.1,
             reachRadius: 0.2, // radius * 2?
             height: 0.2,
-            maxAcceleration: 4.0,
-            maxSpeed: 1.0,
+            maxAcceleration: 5.0,
+            maxSpeed: 0.9,
             collisionQueryRange: 0.5,
             pathOptimizationRange: 0.0,
             separationWeight: 1.0
@@ -161,6 +163,9 @@ class App {
             // TODO: Ensure that reachRadius is correctly set
             if (agentInfos.agentIndex == 0) {
                 console.log("Player reached destination: ", agentInfos);
+
+                // Stop player animations
+                this._scene.stopAllAnimations();
                 
                 // Change camera position depending on player position
                 var playerPos = this._crowd.getAgentPosition(0);
@@ -183,7 +188,7 @@ class App {
 
         // Send off agents
         window.setTimeout(() => {
-            for (var i=0; i<agents.length; i++) {
+            for (var i=1; i<agents.length; i++) {
                 var randomPos = this._navigationPlugin.getRandomPointAround(new Vector3(-2.0, 0.1, -1.8), 0.5);
                 this._crowd.agentGoto(agents[i].idx, randomPos);
             }
@@ -353,6 +358,11 @@ class App {
                 this._debugPathLines[i] = MeshBuilder.CreateDashedLines("ribbon", { points: pathPoints, updatable: true, instance: this._debugPathLines[i], }, this._scene);
             }
 
+            console.log("SCENE", this._scene);
+            this._scene.animationGroups.forEach((group) => {
+                group.loopAnimation = true;
+                group.play(true);
+            });
         }
     }
 }
