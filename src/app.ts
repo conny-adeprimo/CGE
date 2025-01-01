@@ -16,14 +16,6 @@ class App {
     private _navigationPlugin;
     private _debugPathLines = [];
 
-    private sceneData = {
-        cameraPositions: [
-            new Vector3(-6, 4, -8),
-            new Vector3(-4, 4, -4),
-            new Vector3(-4, 5, -16)
-        ]
-    }
-
     constructor() {
         this._main();
     }
@@ -33,6 +25,8 @@ class App {
         await this.createEngine();
 
         this._scene = await this.createScene();
+
+        this.switchCamera(0);
 
         this.createGUI();
 
@@ -70,8 +64,7 @@ class App {
         scene.fogColor = new Color3(0.2, 0.6, 0.9);
 
         // Create Camera
-        var camera = new FreeCamera("camera1", new Vector3(-6, 4, -8), scene);
-        camera.setTarget(Vector3.Zero());
+        var camera = new FreeCamera("camera1", Vector3.ZeroReadOnly, scene);
         camera.attachControl(this._canvas, true);
 
         // Create Light
@@ -170,13 +163,10 @@ class App {
                 // Change camera position depending on player position
                 var playerPos = this._crowd.getAgentPosition(0);
                 if (playerPos._z < -5) {
-                    this._scene.activeCamera.position = this.sceneData.cameraPositions[2];
-                } else if (playerPos._x > 0 && playerPos._z > 0) {
-                    this._scene.activeCamera.position = this.sceneData.cameraPositions[1];
+                    this.switchCamera(1);
                 } else {
-                    this._scene.activeCamera.position = this.sceneData.cameraPositions[0];
+                    this.switchCamera(0);
                 }
-                camera.setTarget(Vector3.Zero());
 
             } else {
                 window.setTimeout(() => {
@@ -364,6 +354,20 @@ class App {
                 group.play(true);
             });
         }
+    }
+
+    private switchCamera(cameraIndex) {
+        const camera = this._scene.activeCamera;
+        switch (cameraIndex) {
+            case 0:
+                camera.position = new Vector3(-8, 2.5, 0);
+                break;
+            case 1:
+                camera.position = new Vector3(-4, 1, -8)
+                break;
+        }
+
+        camera.setTarget(new Vector3(0, 1, this._scene.activeCamera.position.z));
     }
 }
 new App();
