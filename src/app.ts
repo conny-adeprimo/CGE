@@ -2,7 +2,7 @@ import "@babylonjs/core/Debug/debugLayer";
 import "@babylonjs/inspector";
 import "@babylonjs/loaders/glTF";
 import * as Recast from "recast-detour";
-import { Engine, Scene, SceneLoader, PointerEventTypes, Vector3, HemisphericLight, Mesh, MeshBuilder, FreeCamera, StandardMaterial, Color3, TransformNode, RecastJSPlugin } from "@babylonjs/core";
+import { Engine, Scene, Quaternion, Matrix, SceneLoader, PointerEventTypes, Vector3, HemisphericLight, Mesh, MeshBuilder, FreeCamera, StandardMaterial, Color3, TransformNode, RecastJSPlugin } from "@babylonjs/core";
 import { AdvancedDynamicTexture, Button, Control } from "@babylonjs/gui";
 
 class App {
@@ -136,14 +136,22 @@ class App {
 
         for (i = 0; i < 5; i++) {
             //var agentCube = MeshBuilder.CreateBox("cube", { size: width, height: width }, scene);
-            var agentCube = MeshBuilder.CreateCapsule("agent" + i, { radius: 0.3, height: 1.5, tessellation: 16, capSubdivisions: 2 }, scene);
-            var targetCube = MeshBuilder.CreateBox("targetcube" + i, { size: 0.1, height: 0.1 }, scene);
-            var matAgent = new StandardMaterial('mat2', scene);
-            var variation = Math.random();
-            matAgent.diffuseColor = new Color3(0.4 + variation * 0.6, 0.3, 1.0 - variation * 0.3);
-            agentCube.material = matAgent;
-            var randomPos = this._navigationPlugin.getRandomPointAround(new Vector3(-2.0, 0.1, -1.8), 0.5);
-            var transform = new TransformNode("transform" + i);
+            var agentCube: Mesh;
+            if (i==0) {
+                //var agentCube = MeshBuilder.CreateCapsule("agent" + i, { radius: 0.3, height: 1.5, tessellation: 16, capSubdivisions: 2 }, scene);
+                agentCube = await this.loadHuman();
+                console.log("human", agentCube)
+            } else {
+                agentCube = MeshBuilder.CreateCapsule("agent" + i, { radius: 0.3, height: 1.5, tessellation: 16, capSubdivisions: 2 }, scene);
+                var matAgent = new StandardMaterial('mat2', scene);
+                const variation = Math.random();
+                matAgent.diffuseColor = new Color3(0.4 + variation * 0.6, 0.3, 1.0 - variation * 0.3);
+                agentCube.material = matAgent;
+            }
+            
+            const targetCube = MeshBuilder.CreateBox("targetcube" + i, { size: 0.1, height: 0.1 }, scene);
+            const randomPos = this._navigationPlugin.getRandomPointAround(new Vector3(-2.0, 0.1, -1.8), 0.5);
+            const transform = new TransformNode("transform" + i);
             //agentCube.parent = transform;
             var agentIndex = this._crowd.addAgent(randomPos, agentParams, transform);
             agents.push({ idx: agentIndex, trf: transform, mesh: agentCube, target: targetCube });
@@ -256,14 +264,33 @@ class App {
         });
     }
 
+    private async loadHuman(): Promise<Mesh> {
+        //collision mesh
+        //const outer = MeshBuilder.CreateBox("outer", { width: 2, depth: 1, height: 3 }, this._scene);
+        const outer = MeshBuilder.CreateCapsule("playerOuterMesh", { radius: 0.3, height: 1.5, tessellation: 16, capSubdivisions: 2 }, this._scene);
+        outer.isVisible = false;
+        outer.isPickable = false;
+        outer.checkCollisions = true;
+
+        //move origin of box collider to the bottom of the mesh (to match player mesh)
+        outer.bakeTransformIntoVertices(Matrix.Translation(0, 0.5, 0))
+
+        //outer.rotationQuaternion = new Quaternion(0, 1, 0, 0); // rotate the player mesh 180 since we want to see the back of the player
+
+        const result = await SceneLoader.ImportMeshAsync(null, "./models/", "human1.glb", this._scene);
+        const root = result.meshes[0];
+
+        root.parent = outer;
+        root.isPickable = false;
+        root.getChildMeshes().forEach(m => {
+            m.isPickable = false;
+        })
+
+        return  outer as Mesh;
+    }
+
     private async loadEnvironment() {
         const result = await SceneLoader.ImportMeshAsync(null, "./models/", "office.glb", this._scene);
-
-        // TODO: Make walls non-pickable
-        // TODO: Enable Backface Culling for the walls
-
-
-        console.log("result", result);
 
         return [result.meshes[1], result.meshes[2], result.meshes[3]];
     }
