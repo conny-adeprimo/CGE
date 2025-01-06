@@ -2,7 +2,7 @@ import "@babylonjs/core/Debug/debugLayer";
 import "@babylonjs/inspector";
 import "@babylonjs/loaders/glTF";
 import * as Recast from "recast-detour";
-import { Engine, Scene, Quaternion, Matrix, SceneLoader, PointerEventTypes, Vector3, HemisphericLight, Mesh, MeshBuilder, FreeCamera, StandardMaterial, Color3, TransformNode, RecastJSPlugin } from "@babylonjs/core";
+import { Engine, Scene, RefractionTexture, Plane, ShadowGenerator, LensRenderingPipeline, Quaternion, Matrix, SceneLoader, PointerEventTypes, Vector3, HemisphericLight, Mesh, MeshBuilder, FreeCamera, StandardMaterial, Color3, TransformNode, RecastJSPlugin, SpotLight, DirectionalLight, CreatePlane } from "@babylonjs/core";
 import { AdvancedDynamicTexture, Button, Control } from "@babylonjs/gui";
 
 class App {
@@ -15,6 +15,46 @@ class App {
     private _crowd;
     private _navigationPlugin;
     private _debugPathLines = [];
+    private _shadowGenerator;
+
+    private _officeCameraMap = [
+        {
+            name: "office",
+            position: new Vector3(-3, 0.02, 0),
+            rotation: null,
+            prio: 0,
+            sizeZ: 14,
+            sizeX: 10,
+            debugColor: new Color3(1, 0, 0)
+        },
+        {
+            name: "officeEast",
+            position: new Vector3(3, 0.04, -8),
+            rotation: null,
+            prio: 0,
+            sizeZ: 2,
+            sizeX: 10,
+            debugColor: new Color3(0, 1, 0)
+        },
+        {
+            name: "officeWaterCooler",
+            position: new Vector3(6, 0.06, -3),
+            rotation: null,
+            prio: 0,
+            sizeZ: 4,
+            sizeX: 4,
+            debugColor: new Color3(0, 0, 1)
+        },
+        {
+            name: "officeCopyRoom",
+            position: new Vector3(6, 0.08, 2),
+            rotation: null,
+            prio: 0,
+            sizeZ: 4,
+            sizeX: 6,
+            debugColor: new Color3(0, 1, 1)
+        }
+    ];
 
     constructor() {
         this._main();
@@ -26,7 +66,7 @@ class App {
 
         this._scene = await this.createScene();
 
-        this.switchCamera(0);
+        this.switchCamera(1);
 
         this.createGUI();
 
@@ -39,10 +79,15 @@ class App {
         this._scene.stopAllAnimations();
 
         this.addKeyboardEvents(this._scene);
+
+        this.renderDebugCamera();
     }
 
     private addKeyboardEvents(scene: Scene) {
         window.addEventListener("keydown", (ev) => {
+
+            if (this._scene.debugLayer.isVisible())
+                return;
 
             switch (ev.key) {
                 case "ArrowDown":
@@ -65,14 +110,17 @@ class App {
                 case "ArrowRight":
                     scene.activeCamera.position.z -= ev.shiftKey ? 1 : 0.1;
                     break;
-                case "1":
+                case "0":
                     this.switchCamera(0);
                     break;
-                case "2":
+                case "1":
                     this.switchCamera(1);
                     break;
+                case "2":
+                    this.switchCamera(2);
+                    break;
                 case "3":
-                    alert("Camera 3 is not implemented yet");
+                    this.switchCamera(3);
                     break;
 
             }
@@ -98,6 +146,7 @@ class App {
 
     private async createScene(): Promise<Scene> {
         var scene = new Scene(this._engine);
+        scene.ambientColor = new Color3(1, 0, 0);
 
         scene.fogMode = Scene.FOGMODE_EXP;
         scene.fogDensity = 0.002;
@@ -107,9 +156,21 @@ class App {
         var camera = new FreeCamera("camera1", Vector3.ZeroReadOnly, scene);
         camera.attachControl(this._canvas, true);
 
+        const lensEffect = new LensRenderingPipeline('lensEffects', {
+            edge_blur: 0.75,
+            chromatic_aberration: 0.1,
+            // distortion: 0.1,
+            grain_amount: 1.5,
+            blur_noise: true
+        }, scene, 1.0, [camera]);
+
         // Create Light
         var light = new HemisphericLight("light1", new Vector3(0, 0, 0), scene);
         light.intensity = 0.7;
+
+        var backLight = new DirectionalLight("backLight", new Vector3(1, 0, 0), scene);
+        this._shadowGenerator = new ShadowGenerator(1024, backLight);
+        this._shadowGenerator.useExponentialShadowMap = true;
 
         // Create Static Mesh
         //var worldMesh = await this.createStaticMesh(scene);
@@ -120,10 +181,18 @@ class App {
             if (mat.name === "RoomWallMaterial") {
                 mat.backFaceCulling = true;
             }
+
+            if (mat.name === "Ceiling" || mat.name === "CeilingLights") {
+                mat.backFaceCulling = true;
+            }
         });
         scene.meshes.forEach((mesh) => {
-            if (mesh.name === "RoomWalls") {
+            if (mesh.name === "RoomWalls" || mesh.name === "Ceiling") {
                 mesh.isPickable = false;
+            }
+            if (mesh.name === "GlassWall") {
+                mesh.isPickable = false;
+                mesh.receiveShadows = true;
             }
         });
 
@@ -132,7 +201,7 @@ class App {
 
         var navmeshParameters = {
             cs: 0.2,
-            ch: 0.2,
+            ch: 0.01, //0.2 // Higher value shifts the click position
             walkableSlopeAngle: 90,
             walkableHeight: 1.0,
             walkableClimb: 1,
@@ -176,16 +245,32 @@ class App {
             if (i == 0) {
                 //var agentCube = MeshBuilder.CreateCapsule("agent" + i, { radius: 0.3, height: 1.5, tessellation: 16, capSubdivisions: 2 }, scene);
                 agentCube = await this.loadHuman();
-                console.log("human", agentCube)
+                console.log("human", agentCube);
+
+                // FRESNEL TEST
+                /*
+                var mainMaterial = new StandardMaterial("fresnelMaterial", scene);
+                
+                var refractionTexture = new RefractionTexture("th", 1024, scene);
+                refractionTexture.renderList.push(agentCube);
+                refractionTexture.refractionPlane = new Plane(0, 0, -1, 0);
+                refractionTexture.depth = 2.0;
+                
+                mainMaterial.diffuseColor = new Color3(1, 1, 1);
+                mainMaterial.refractionTexture = refractionTexture;
+                mainMaterial.indexOfRefraction = 0.6;*/
             } else {
                 agentCube = MeshBuilder.CreateCapsule("agent" + i, { radius: 0.3, height: 1.5, tessellation: 16, capSubdivisions: 2 }, scene);
                 var matAgent = new StandardMaterial('mat2', scene);
                 const variation = Math.random();
                 matAgent.diffuseColor = new Color3(0.4 + variation * 0.6, 0.3, 1.0 - variation * 0.3);
                 agentCube.material = matAgent;
+                
+                this._shadowGenerator.addShadowCaster(agentCube);
             }
 
             const targetCube = MeshBuilder.CreateCylinder("targetCylinder" + i, { diameterTop: 0.7, diameterBottom: .7, height: 0.01, tessellation: 32 }, scene);
+            targetCube.isPickable = false;
             const matTarget = new StandardMaterial('matTarget', scene);
             matTarget.diffuseColor = new Color3(0, 0.3, 0.9);
             matTarget.alpha = 0.33;
@@ -208,11 +293,7 @@ class App {
 
                 // Change camera position depending on player position
                 var playerPos = this._crowd.getAgentPosition(0);
-                if (playerPos._z < -5) {
-                    this.switchCamera(1);
-                } else {
-                    this.switchCamera(0);
-                }
+                this.switchCameraByPlayerPosition(playerPos._x, playerPos._z);
 
             } else {
                 window.setTimeout(() => {
@@ -243,6 +324,7 @@ class App {
         });
 
         scene.onBeforeRenderObservable.add(() => {
+
 
             // Move and rotate agents
             for (let i = 0; i < agents.length; i++) {
@@ -325,6 +407,7 @@ class App {
         root.isPickable = false;
         root.getChildMeshes().forEach(m => {
             m.isPickable = false;
+            this._shadowGenerator.addShadowCaster(m);
         })
 
         return outer as Mesh;
@@ -333,7 +416,9 @@ class App {
     private async loadEnvironment() {
         const result = await SceneLoader.ImportMeshAsync(null, "./models/", "office.glb", this._scene);
 
-        return [result.meshes[1], result.meshes[2], result.meshes[3]];
+        console.log("loadEnvironment", result);
+
+        return [result.meshes[1], result.meshes[2], result.meshes[3], result.meshes[4],result.meshes[5]];
     }
 
     private async createStaticMesh(scene) {
@@ -402,18 +487,46 @@ class App {
         }
     }
 
+    private switchCameraByPlayerPosition(x:number, z:number) {
+        if (z < -5) {
+            this.switchCamera(2);
+        } else {
+            this.switchCamera(1);
+        }
+    }
+
     private switchCamera(cameraIndex) {
         const camera = this._scene.activeCamera;
         switch (cameraIndex) {
             case 0:
-                camera.position = new Vector3(-8, 2.5, 0);
+                // Birds eye view
+                camera.position = new Vector3(-20, 40, -5);
+                camera.setTarget(new Vector3(-3, 0, -5));
                 break;
             case 1:
-                camera.position = new Vector3(-4.1, 0.9, -9)
+                // Office view
+                camera.position = new Vector3(-8.5, 2.75, 0);
+                camera.setTarget(new Vector3(0, 0, this._scene.activeCamera.position.z));
+                break;
+            case 2:
+                // Office -> Entrence view
+                camera.position = new Vector3(2, 0.5, -1);
+                camera.rotation = new Vector3(0, 3, 0);
                 break;
         }
+    }
 
-        camera.setTarget(new Vector3(0, 1, this._scene.activeCamera.position.z));
+    private renderDebugCamera () {
+        this._officeCameraMap.forEach((cameraMap) => {
+            const plane = MeshBuilder.CreateBox("cameraMap_" + cameraMap.name, { width: cameraMap.sizeZ, height: 0.01, depth: cameraMap.sizeX }, this._scene);
+            const planeMaterial = new StandardMaterial("cameraMapMat_" + cameraMap.name, this._scene);
+            planeMaterial.diffuseColor = cameraMap.debugColor;
+            planeMaterial.alpha = 0.3;
+
+            plane.material = planeMaterial;
+
+            plane.position = cameraMap.position
+        });
     }
 }
 new App();

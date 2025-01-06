@@ -18,6 +18,11 @@ Press Shift + CTRL + ALT + I
 * [Crows Navigation](https://doc.babylonjs.com/features/featuresDeepDive/crowdNavigation/)
     * [Navigation Mesh](https://playground.babylonjs.com/#KVQP83#0)
     * https://playground.babylonjs.com/#WCSDE1
+* [Floor Tile Bumpmap](https://playground.babylonjs.com/#FEEK7G#30)
+* Dat GUI 
+    * https://playground.babylonjs.com/#SYQW69#1077
+    * https://doc.babylonjs.com/features/featuresDeepDive/gui/#datgui
+* [Node Material Editor](https://nme.babylonjs.com/)
 
 ## Plan
 * 
