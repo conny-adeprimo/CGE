@@ -19,40 +19,20 @@ class App {
 
     private _officeCameraMap = [
         {
-            name: "office",
-            position: new Vector3(-3, 0.02, 0),
-            rotation: null,
-            prio: 0,
-            sizeZ: 14,
-            sizeX: 10,
-            debugColor: new Color3(1, 0, 0)
-        },
-        {
             name: "officeEast",
-            position: new Vector3(3, 0.04, -8),
-            rotation: null,
-            prio: 0,
-            sizeZ: 2,
-            sizeX: 10,
+            position: new Vector3(4, 0.04, -2),
+            cameraIndex: 2,
+            sizeZ: 5,
+            sizeX: 2,
             debugColor: new Color3(0, 1, 0)
         },
         {
-            name: "officeWaterCooler",
-            position: new Vector3(6, 0.06, -3),
-            rotation: null,
-            prio: 0,
-            sizeZ: 4,
-            sizeX: 4,
-            debugColor: new Color3(0, 0, 1)
-        },
-        {
-            name: "officeCopyRoom",
-            position: new Vector3(6, 0.08, 2),
-            rotation: null,
-            prio: 0,
-            sizeZ: 4,
-            sizeX: 6,
-            debugColor: new Color3(0, 1, 1)
+            name: "officeMain",
+            position: new Vector3(8, 0.04, 5),
+            cameraIndex: 1,
+            sizeZ: 10,
+            sizeX: 14,
+            debugColor: new Color3(0.5, 0, 1)
         }
     ];
 
@@ -488,11 +468,39 @@ class App {
     }
 
     private switchCameraByPlayerPosition(x:number, z:number) {
-        if (z < -5) {
-            this.switchCamera(2);
-        } else {
+
+        // Clear all cameraMap edges
+        this._officeCameraMap.forEach((cameraMap) => {
+            const cameraMapMesh = this._scene.getMeshByName("cameraMap_" + cameraMap.name);
+            cameraMapMesh.disableEdgesRendering();
+        });
+
+        // Find the camera from the player position
+        for (let i = 0; this._officeCameraMap.length > i; i++) {
+            const m = this._officeCameraMap[i];
+
+            const playerWithinX = x < m.position.x && m.position.x - m.sizeX < x;
+            const playerWithinZ = z < m.position.z && m.position.z - m.sizeZ < z;
+
+            console.log("PLAYERPOS", x, z, playerWithinX, playerWithinZ);
+
+            const cameraMapMesh = this._scene.getMeshByName("cameraMap_" + m.name);
+
+            if (playerWithinX && playerWithinZ) {
+                console.log("PLAYER WITHIN", m.name);
+                
+                cameraMapMesh.enableEdgesRendering();
+
+                this.switchCamera(m.cameraIndex);
+
+                return;
+            }
+
+            console.error("Could not find camera for position", x, z);
+
             this.switchCamera(1);
-        }
+        };
+
     }
 
     private switchCamera(cameraIndex) {
@@ -517,15 +525,21 @@ class App {
     }
 
     private renderDebugCamera () {
+
+        const centerSphere = MeshBuilder.CreateSphere("centerSphere", { diameter: 0.2, segments: 16 }, this._scene);
+        centerSphere.position = new Vector3(0, 0.05, 0);
+        const centerSphereMaterial = new StandardMaterial("centerSphereMat", this._scene);
+        centerSphereMaterial.diffuseColor = new Color3(1, 1, 0);
+
         this._officeCameraMap.forEach((cameraMap) => {
-            const plane = MeshBuilder.CreateBox("cameraMap_" + cameraMap.name, { width: cameraMap.sizeZ, height: 0.01, depth: cameraMap.sizeX }, this._scene);
+            const plane = MeshBuilder.CreateBox("cameraMap_" + cameraMap.name, { width: cameraMap.sizeX, height: 0.01, depth: cameraMap.sizeZ }, this._scene);
+
             const planeMaterial = new StandardMaterial("cameraMapMat_" + cameraMap.name, this._scene);
             planeMaterial.diffuseColor = cameraMap.debugColor;
             planeMaterial.alpha = 0.3;
 
             plane.material = planeMaterial;
-
-            plane.position = cameraMap.position
+            plane.position = new Vector3(cameraMap.position.x - (cameraMap.sizeX / 2), cameraMap.position.y, cameraMap.position.z - (cameraMap.sizeZ / 2));
         });
     }
 }
